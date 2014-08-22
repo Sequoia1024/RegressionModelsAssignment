@@ -1,0 +1,58 @@
+---
+title: The reationship between mpg and transmission type  
+---
+
+### Introduction (executive summary)
+This assignment calls for an analysis of the "mtcars" dataset to find out the relationship between a set of variables and miles per gallon (mpg). Specifically, whether different types of transmission ("automatic or manual) affect mpg of a car; if yes, how much effect it has. After multiple linear regression analysis, it seems the type of transmission indeed affects the mpg, but the most critical factor for mpg is the weight of the vehicle.
+### Data preprocessing 
+By loading and taking a look at the dataset, one can see that the data are very clean already--there are only 32 observations and 11 variables. No pre-processing is needed.
+```{r 'loading and checking data',echo=FALSE}
+data(mtcars)
+#str(mtcars) #to save space...
+```
+### Data Analsysis
+The simplest way to look at the relationship between mpg and transmission type could be: run a linear regression (mpg~am) and see whether the coefficient of the 'am' is significantly from zero:
+```{r, 'linear regression between mpg and am'}
+fit1 <- lm(mpg ~ am, data = mtcars)
+anova(fit1)
+```
+The ANOVA of the linear model shows that this simple linear regression coefficent is significantly different from 0. Manual transmission (am=1) is better for mpg (7.2) than automatic transmission (am=0).
+
+However, given this dataset is so small, we are not sure how strong this effect could be. The other important factor to consider is that there are several other variables which could affect mpg. It is entirely possible that some other factors are more critical for mpg. This could be illustrated by plotting the residuals of this model using different color for different vehicle weights (See figure 1 in appendix).
+
+Therefore, in the next model, all available predictors were included. The ANOVA showed that this is indeed a better model. The comparison of residuals is plotted in figure 2, Appendix.  
+```{r, 'linear regression with all variables'}
+fit2 <- glm(mpg~., data = mtcars)
+anova(fit1,fit2)
+```
+The second model clearly did a better job at predicting the mpg of cars -- the residuals are much smaller. Also comparing with the first model, the coefficent of "am" variable in the second model is much smaller -- 2.5 versus 7.2 in the first model. This shows that once considering other variables, the type of transimission plays a less critical role in determing a car's mpg. 
+
+Lastly, not all variables might be necessary for deciding the mpg of cars. Therefore, we use back elimination to remove insignificant variables.
+```{r, 'backward elimination of variables',eval=FALSE}
+step(fit2,direction="backward",test="F"); #the output is too long. suppressed it.
+```
+From above results we found out that only three coefficients are significant: that of weight ("wt"),  1/4 mile time ("qsec") and type of transmission ("am"). The type of transmission does affect the mpg a bit -- with manual transmission cars have a slightly higher mpg (+2.9). So in the last model we only included these three variables.
+```{r, 'the most relevant model'}
+fit3 <- glm(mpg ~ am + qsec + wt, data = mtcars)
+anova(fit1,fit2,fit3)
+```
+###Conclusion
+With the regression analysis, it seems that the type of transmission does play some role in predicting the mpg of cars. Manual transmission has a slightly higher mpg (+2.9) than automatic transmission. However, the most significant factor in determing a car's mpg is its weight.
+
+***
+###Appendix
+Figure1: the residuals of the simplest model (mpg~am) for different weight:
+
+```{r, 'residuals for different vehicle weight',echo=FALSE}
+plot(residuals(fit1),col = cut(mtcars$wt,3),main = "residuals from mpg~am for different weight ranges")
+legend("topright",legend=c("light weight","medium weight","heavy weight"),col=c("black","red","green"),pch=21)
+```
+
+Figure2: the residuals of 3 different models
+
+```{r,'residuals of different models',echo=FALSE}
+plot(residuals(fit1),main = "residuals from 3 models")
+points(residuals(fit2),col='red')
+points(residuals(fit3),col='green')
+legend("topright",legend = c("am only","all variables","am,qsec,wt"),col=c("black","red","green"),pch=21)
+```
